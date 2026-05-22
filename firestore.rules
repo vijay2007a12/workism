@@ -1,0 +1,61 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function hasOnlyAllowedKeys(keys) {
+      return request.resource.data.keys().hasOnly(keys);
+    }
+
+    match /simulations/{docId} {
+      allow read: if true;
+      allow create: if hasOnlyAllowedKeys([
+        'role',
+        'title',
+        'brief',
+        'status',
+        'progress',
+        'source',
+        'createdAt'
+      ])
+      && request.resource.data.role is string
+      && request.resource.data.title is string
+      && request.resource.data.status in ['created', 'started', 'submitted', 'completed']
+      && request.resource.data.progress is number
+      && request.resource.data.progress >= 0
+      && request.resource.data.progress <= 100;
+      allow update, delete: if false;
+    }
+
+    match /workRecordEvents/{docId} {
+      allow read: if true;
+      allow create: if hasOnlyAllowedKeys([
+        'taskId',
+        'simulationName',
+        'completedDate',
+        'result',
+        'action',
+        'source',
+        'createdAt'
+      ])
+      && request.resource.data.taskId is string
+      && request.resource.data.simulationName is string
+      && request.resource.data.action in ['viewed', 'downloaded'];
+      allow update, delete: if false;
+    }
+
+    match /analyticsEvents/{docId} {
+      allow read: if true;
+      allow create: if hasOnlyAllowedKeys([
+        'action',
+        'source',
+        'createdAt'
+      ])
+      && request.resource.data.action is string;
+      allow update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

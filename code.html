@@ -453,6 +453,37 @@
 </div>
 </div>
 <div id="toast" class="fixed bottom-20 md:bottom-6 right-4 z-50 bg-surface-container border border-outline-variant rounded-lg px-4 py-3 text-sm text-on-surface shadow-xl hidden"></div>
+<script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+        import {
+            addDoc,
+            collection,
+            getFirestore,
+            serverTimestamp
+        } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: 'AIzaSyD5otiPAdknZvyrJMJOF8ua2JidJvfbBgI',
+            authDomain: 'workism-c956e.firebaseapp.com',
+            projectId: 'workism-c956e',
+            storageBucket: 'workism-c956e.firebasestorage.app',
+            messagingSenderId: '1075252207869',
+            appId: '1:1075252207869:web:452f83684009bddc475e94'
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.worksimFirebase = {
+            async save(collectionName, data) {
+                return addDoc(collection(db, collectionName), {
+                    ...data,
+                    source: 'workism-vercel-demo',
+                    createdAt: serverTimestamp()
+                });
+            }
+        };
+</script>
 <script>
         const modalLayer = document.getElementById('modalLayer');
         const modalTitle = document.getElementById('modalTitle');
@@ -467,6 +498,14 @@
             'Frontend Developer': 'Build a responsive dashboard from a product brief and improve accessibility for keyboard users.',
             'QA Analyst': 'Review a feature, create test cases, report bugs, and recommend release readiness.'
         };
+
+        function saveToFirebase(collectionName, data) {
+            if (!window.worksimFirebase) return;
+            window.worksimFirebase.save(collectionName, data).catch(error => {
+                console.error('Firebase save failed:', error);
+                showToast('Firebase rules may need to be published');
+            });
+        }
 
         function showToast(message) {
             toast.textContent = message;
@@ -524,6 +563,13 @@
             });
             document.getElementById('confirmSimulation').addEventListener('click', () => {
                 addAssignment(roleSelect.value);
+                saveToFirebase('simulations', {
+                    role: roleSelect.value,
+                    title: `${roleSelect.value}: Practical Work Challenge`,
+                    brief: roleBriefs[roleSelect.value],
+                    status: 'created',
+                    progress: 0
+                });
                 closeModal();
                 scrollToPanel('simulations');
                 showToast(`${roleSelect.value} simulation created`);
@@ -560,6 +606,12 @@
                 </div>
             `;
             showToast('Simulation started. AI coach is tracking your progress.');
+            saveToFirebase('simulations', {
+                role: 'Demo Candidate',
+                title: row.querySelector('h4')?.textContent.trim() || 'WorkSim assignment',
+                status: 'started',
+                progress: 25
+            });
         }
 
         function getRecordData(button) {
@@ -606,6 +658,13 @@
             link.click();
             URL.revokeObjectURL(link.href);
             showToast('Work record downloaded');
+            saveToFirebase('workRecordEvents', {
+                taskId: record.id,
+                simulationName: record.title,
+                completedDate: record.date,
+                result: record.result,
+                action: 'downloaded'
+            });
         }
 
         function filterDashboard(query) {
@@ -644,11 +703,24 @@
             if (action === 'start-qa' || action === 'start-new') startAssignment(actionTarget);
             if (action === 'view-record') viewRecord(actionTarget);
             if (action === 'download-record') downloadRecord(actionTarget);
+            if (action === 'view-record') {
+                const record = getRecordData(actionTarget);
+                saveToFirebase('workRecordEvents', {
+                    taskId: record.id,
+                    simulationName: record.title,
+                    completedDate: record.date,
+                    result: record.result,
+                    action: 'viewed'
+                });
+            }
             if (action === 'report') openModal('Performance Report', '<p>Your readiness score is 84%. You are strongest in debugging, UI implementation, and practical communication. Complete one more QA task to unlock an updated shareable Work Record.</p>');
             if (action === 'notifications') openModal('Notifications', '<ul class="space-y-2"><li>AI feedback is ready for API Debugging Challenge.</li><li>New Frontend Developer simulation available.</li><li>Your Work Record was viewed by a demo employer profile.</li></ul>');
             if (action === 'settings') openModal('Settings', '<p>Demo settings are active. In the full product, users can manage profile visibility, preferred roles, feedback detail, and Work Record sharing.</p>');
             if (action === 'help') openModal('Help Center', '<p>Choose a role, start a simulation, submit practical work, then download or share your Work Record after completion.</p>');
             if (action === 'account') openModal('Account', '<p class="text-on-surface font-bold">Demo Candidate</p><p>Career track: Software Developer</p><p>Status: Building job-ready experience</p>');
+            if (['report', 'notifications', 'settings', 'help', 'account'].includes(action)) {
+                saveToFirebase('analyticsEvents', { action });
+            }
         });
 
         modalLayer.addEventListener('click', (event) => {
