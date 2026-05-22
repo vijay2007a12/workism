@@ -42,6 +42,10 @@
             grid-template-rows: auto;
             gap: 1.5rem;
         }
+
+        .is-hidden {
+            display: none !important;
+        }
     </style>
 <script id="tailwind-config">
         tailwind.config = {
@@ -126,35 +130,35 @@
 <p class="text-[10px] text-secondary font-medium tracking-widest uppercase mt-1">Career Simulation</p>
 </div>
 </div>
-<button class="mt-2 w-full bg-primary text-on-primary py-2.5 rounded-lg font-bold text-sm hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+<button data-action="new-simulation" class="mt-2 w-full bg-primary text-on-primary py-2.5 rounded-lg font-bold text-sm hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
 <span class="material-symbols-outlined text-lg">add</span>
             New Simulation
         </button>
 <nav class="flex-1 mt-6 flex flex-col gap-1">
 <!-- Active Navigation Logic: "Dashboard" -->
-<a class="flex items-center gap-3 px-3 py-2.5 bg-secondary-container text-primary rounded-lg border-r-4 border-primary font-body text-sm font-medium transition-all scale-[0.98]" href="#">
+<a data-nav-target="dashboard" class="flex items-center gap-3 px-3 py-2.5 bg-secondary-container text-primary rounded-lg border-r-4 border-primary font-body text-sm font-medium transition-all scale-[0.98]" href="#dashboard">
 <span class="material-symbols-outlined">dashboard</span>
                 Dashboard
             </a>
-<a class="flex items-center gap-3 px-3 py-2.5 text-secondary hover:text-on-surface hover:bg-surface-container-highest transition-all font-body text-sm font-medium" href="#">
+<a data-nav-target="simulations" class="flex items-center gap-3 px-3 py-2.5 text-secondary hover:text-on-surface hover:bg-surface-container-highest transition-all font-body text-sm font-medium" href="#simulations">
 <span class="material-symbols-outlined">precision_manufacturing</span>
                 Simulations
             </a>
-<a class="flex items-center gap-3 px-3 py-2.5 text-secondary hover:text-on-surface hover:bg-surface-container-highest transition-all font-body text-sm font-medium" href="#">
+<a data-nav-target="records" class="flex items-center gap-3 px-3 py-2.5 text-secondary hover:text-on-surface hover:bg-surface-container-highest transition-all font-body text-sm font-medium" href="#records">
 <span class="material-symbols-outlined">history_edu</span>
                 Work Records
             </a>
-<a class="flex items-center gap-3 px-3 py-2.5 text-secondary hover:text-on-surface hover:bg-surface-container-highest transition-all font-body text-sm font-medium" href="#">
+<a data-nav-target="performance" class="flex items-center gap-3 px-3 py-2.5 text-secondary hover:text-on-surface hover:bg-surface-container-highest transition-all font-body text-sm font-medium" href="#performance">
 <span class="material-symbols-outlined">trending_up</span>
                 Performance
             </a>
 </nav>
 <div class="mt-auto border-t border-outline-variant pt-4 flex flex-col gap-1">
-<a class="flex items-center gap-3 px-3 py-2 text-secondary hover:text-on-surface hover:bg-surface-container-highest transition-all font-body text-sm font-medium" href="#">
+<a data-action="help" class="flex items-center gap-3 px-3 py-2 text-secondary hover:text-on-surface hover:bg-surface-container-highest transition-all font-body text-sm font-medium" href="#help">
 <span class="material-symbols-outlined">help_outline</span>
                 Help Center
             </a>
-<a class="flex items-center gap-3 px-3 py-2 text-secondary hover:text-on-surface hover:bg-surface-container-highest transition-all font-body text-sm font-medium" href="#">
+<a data-action="account" class="flex items-center gap-3 px-3 py-2 text-secondary hover:text-on-surface hover:bg-surface-container-highest transition-all font-body text-sm font-medium" href="#account">
 <span class="material-symbols-outlined">person</span>
                 Account
             </a>
@@ -167,14 +171,14 @@
 <h1 class="font-headline text-xl font-bold tracking-tighter text-on-surface dark:text-on-surface">WorkSim</h1>
 <div class="relative hidden lg:block">
 <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-secondary text-lg">search</span>
-<input class="bg-surface-container border border-outline-variant rounded-full pl-10 pr-4 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary w-64 text-on-surface" placeholder="Search roles, tasks, records..." type="text"/>
+<input id="globalSearch" class="bg-surface-container border border-outline-variant rounded-full pl-10 pr-4 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary w-64 text-on-surface" placeholder="Search roles, tasks, records..." type="text"/>
 </div>
 </div>
 <div class="flex items-center gap-4">
-<button class="text-on-secondary-container dark:text-on-secondary-container hover:text-primary transition-colors duration-200">
+<button data-action="notifications" class="text-on-secondary-container dark:text-on-secondary-container hover:text-primary transition-colors duration-200">
 <span class="material-symbols-outlined">notifications</span>
 </button>
-<button class="text-on-secondary-container dark:text-on-secondary-container hover:text-primary transition-colors duration-200">
+<button data-action="settings" class="text-on-secondary-container dark:text-on-secondary-container hover:text-primary transition-colors duration-200">
 <span class="material-symbols-outlined">settings</span>
 </button>
 <div class="h-8 w-8 rounded-full overflow-hidden border border-outline-variant">
@@ -183,7 +187,7 @@
 </div>
 </header>
 <!-- Main Content Area -->
-<main class="flex-1 overflow-y-auto p-6 lg:p-8 bg-surface-container-lowest">
+<main id="dashboard" class="flex-1 overflow-y-auto p-6 lg:p-8 bg-surface-container-lowest">
 <div class="max-w-7xl mx-auto">
 <!-- Welcome Section -->
 <div class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -266,7 +270,7 @@
 </div>
 </div>
 <!-- CTA / New Sim Card -->
-<div class="col-span-12 lg:col-span-4 bg-primary text-on-primary p-6 rounded-xl flex flex-col justify-between hover:shadow-lg hover:shadow-primary/20 transition-all cursor-pointer">
+<div data-action="new-simulation" class="col-span-12 lg:col-span-4 bg-primary text-on-primary p-6 rounded-xl flex flex-col justify-between hover:shadow-lg hover:shadow-primary/20 transition-all cursor-pointer">
 <div>
 <span class="material-symbols-outlined text-4xl mb-4">bolt</span>
 <h3 class="text-xl font-bold leading-tight">Start a Real-World Job Simulation</h3>
@@ -277,14 +281,14 @@
 </div>
 </div>
 <!-- Active Assignments Section -->
-<div class="col-span-12 lg:col-span-7 bg-surface border border-outline-variant rounded-xl overflow-hidden">
+<div id="simulations" class="col-span-12 lg:col-span-7 bg-surface border border-outline-variant rounded-xl overflow-hidden">
 <div class="px-6 py-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
 <h3 class="font-bold text-sm tracking-wide uppercase text-secondary">Active Assignments</h3>
-<button class="text-primary text-xs font-bold hover:underline">View All</button>
+<button data-action="view-simulations" class="text-primary text-xs font-bold hover:underline">View All</button>
 </div>
-<div class="divide-y divide-outline-variant">
+<div id="assignmentList" class="divide-y divide-outline-variant">
 <!-- Sim Item 1 -->
-<div class="p-4 flex items-center gap-4 hover:bg-surface-container-high transition-colors">
+<div data-search-item class="p-4 flex items-center gap-4 hover:bg-surface-container-high transition-colors">
 <div class="w-12 h-12 rounded bg-surface-container-highest flex items-center justify-center border border-outline-variant">
 <span class="material-symbols-outlined text-primary">terminal</span>
 </div>
@@ -300,7 +304,7 @@
 </div>
 </div>
 <!-- Sim Item 2 -->
-<div class="p-4 flex items-center gap-4 hover:bg-surface-container-high transition-colors">
+<div data-search-item class="p-4 flex items-center gap-4 hover:bg-surface-container-high transition-colors">
 <div class="w-12 h-12 rounded bg-surface-container-highest flex items-center justify-center border border-outline-variant">
 <span class="material-symbols-outlined text-primary">hub</span>
 </div>
@@ -316,7 +320,7 @@
 </div>
 </div>
 <!-- Sim Item 3 -->
-<div class="p-4 flex items-center gap-4 hover:bg-surface-container-high transition-colors">
+<div data-search-item class="p-4 flex items-center gap-4 hover:bg-surface-container-high transition-colors">
 <div class="w-12 h-12 rounded bg-surface-container-highest flex items-center justify-center border border-outline-variant">
 <span class="material-symbols-outlined text-primary">security</span>
 </div>
@@ -325,21 +329,21 @@
 <p class="text-xs text-on-surface-variant">Module 1 of 5 - On Deck</p>
 </div>
 <div class="text-right">
-<button class="bg-secondary-container text-on-surface text-[10px] font-bold px-3 py-1 rounded">START</button>
+<button data-action="start-qa" class="bg-secondary-container text-on-surface text-[10px] font-bold px-3 py-1 rounded">START</button>
 </div>
 </div>
 </div>
 </div>
 <!-- Performance History Chart Area -->
-<div class="col-span-12 lg:col-span-5 bg-surface-container border border-outline-variant rounded-xl p-6">
+<div id="performance" class="col-span-12 lg:col-span-5 bg-surface-container border border-outline-variant rounded-xl p-6">
 <div class="flex justify-between items-center mb-6">
 <h3 class="font-bold text-sm tracking-wide uppercase text-secondary">Performance History</h3>
-<select class="bg-surface border-none text-xs text-secondary font-bold focus:ring-0">
+<select id="rangeSelect" class="bg-surface border-none text-xs text-secondary font-bold focus:ring-0">
 <option>Last 7 Days</option>
 <option>Last 30 Days</option>
 </select>
 </div>
-<div class="h-48 flex items-end justify-between gap-1">
+<div id="performanceBars" class="h-48 flex items-end justify-between gap-1">
 <div class="w-full bg-primary/20 rounded-t h-[40%] hover:bg-primary/40 transition-all cursor-help" title="Mon: 40%"></div>
 <div class="w-full bg-primary/20 rounded-t h-[65%] hover:bg-primary/40 transition-all cursor-help" title="Tue: 65%"></div>
 <div class="w-full bg-primary/20 rounded-t h-[55%] hover:bg-primary/40 transition-all cursor-help" title="Wed: 55%"></div>
@@ -356,11 +360,11 @@
 <span class="material-symbols-outlined text-tertiary">verified_user</span>
 <span class="text-xs text-on-surface-variant font-medium">Job-ready score improving</span>
 </div>
-<span class="text-xs font-bold text-primary">View Full Report</span>
+<button data-action="report" class="text-xs font-bold text-primary">View Full Report</button>
 </div>
 </div>
 <!-- Completed Work Records -->
-<div class="col-span-12 bg-surface-container border border-outline-variant rounded-xl overflow-hidden">
+<div id="records" class="col-span-12 bg-surface-container border border-outline-variant rounded-xl overflow-hidden">
 <div class="px-6 py-4 border-b border-outline-variant bg-surface-container-low">
 <h3 class="font-bold text-sm tracking-wide uppercase text-secondary">Completed Work Records</h3>
 </div>
@@ -376,7 +380,7 @@
 </tr>
 </thead>
 <tbody class="divide-y divide-outline-variant text-sm">
-<tr class="hover:bg-surface-container-high transition-colors">
+<tr data-search-item class="hover:bg-surface-container-high transition-colors">
 <td class="px-6 py-4 font-mono text-primary">SIM-8821</td>
 <td class="px-6 py-4 font-bold">API Debugging Challenge</td>
 <td class="px-6 py-4 text-on-surface-variant">Oct 24, 2023</td>
@@ -384,11 +388,11 @@
 <span class="px-2 py-0.5 rounded bg-tertiary-container text-tertiary text-[10px] font-bold">SUCCESS</span>
 </td>
 <td class="px-6 py-4 text-right">
-<button class="material-symbols-outlined text-secondary hover:text-on-surface">download</button>
-<button class="material-symbols-outlined text-secondary hover:text-on-surface ml-2">visibility</button>
+<button data-action="download-record" class="material-symbols-outlined text-secondary hover:text-on-surface">download</button>
+<button data-action="view-record" class="material-symbols-outlined text-secondary hover:text-on-surface ml-2">visibility</button>
 </td>
 </tr>
-<tr class="hover:bg-surface-container-high transition-colors">
+<tr data-search-item class="hover:bg-surface-container-high transition-colors">
 <td class="px-6 py-4 font-mono text-primary">SIM-8819</td>
 <td class="px-6 py-4 font-bold">Landing Page Implementation</td>
 <td class="px-6 py-4 text-on-surface-variant">Oct 22, 2023</td>
@@ -396,11 +400,11 @@
 <span class="px-2 py-0.5 rounded bg-tertiary-container text-tertiary text-[10px] font-bold">SUCCESS</span>
 </td>
 <td class="px-6 py-4 text-right">
-<button class="material-symbols-outlined text-secondary hover:text-on-surface">download</button>
-<button class="material-symbols-outlined text-secondary hover:text-on-surface ml-2">visibility</button>
+<button data-action="download-record" class="material-symbols-outlined text-secondary hover:text-on-surface">download</button>
+<button data-action="view-record" class="material-symbols-outlined text-secondary hover:text-on-surface ml-2">visibility</button>
 </td>
 </tr>
-<tr class="hover:bg-surface-container-high transition-colors">
+<tr data-search-item class="hover:bg-surface-container-high transition-colors">
 <td class="px-6 py-4 font-mono text-primary">SIM-8794</td>
 <td class="px-6 py-4 font-bold">User Authentication Review</td>
 <td class="px-6 py-4 text-on-surface-variant">Oct 19, 2023</td>
@@ -408,8 +412,8 @@
 <span class="px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant text-[10px] font-bold">ARCHIVED</span>
 </td>
 <td class="px-6 py-4 text-right">
-<button class="material-symbols-outlined text-secondary hover:text-on-surface">download</button>
-<button class="material-symbols-outlined text-secondary hover:text-on-surface ml-2">visibility</button>
+<button data-action="download-record" class="material-symbols-outlined text-secondary hover:text-on-surface">download</button>
+<button data-action="view-record" class="material-symbols-outlined text-secondary hover:text-on-surface ml-2">visibility</button>
 </td>
 </tr>
 </tbody>
@@ -426,21 +430,234 @@
 <span class="material-symbols-outlined">dashboard</span>
 <span class="text-[10px] font-bold">Dashboard</span>
 </button>
-<button class="flex flex-col items-center gap-1 text-secondary">
+<button data-nav-target="simulations" class="flex flex-col items-center gap-1 text-secondary">
 <span class="material-symbols-outlined">precision_manufacturing</span>
 <span class="text-[10px] font-medium">Sims</span>
 </button>
-<button class="flex flex-col items-center gap-1 text-secondary">
+<button data-nav-target="records" class="flex flex-col items-center gap-1 text-secondary">
 <span class="material-symbols-outlined">history_edu</span>
 <span class="text-[10px] font-medium">Records</span>
 </button>
-<button class="flex flex-col items-center gap-1 text-secondary">
+<button data-action="account" class="flex flex-col items-center gap-1 text-secondary">
 <span class="material-symbols-outlined">person</span>
 <span class="text-[10px] font-medium">Account</span>
 </button>
 </nav>
+<div id="modalLayer" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4">
+<div class="w-full max-w-xl bg-surface-container border border-outline-variant rounded-xl shadow-2xl overflow-hidden">
+<div class="flex items-center justify-between px-6 py-4 border-b border-outline-variant">
+<h3 id="modalTitle" class="font-bold text-on-surface">WorkSim</h3>
+<button data-action="close-modal" class="material-symbols-outlined text-secondary hover:text-on-surface">close</button>
+</div>
+<div id="modalBody" class="p-6 text-sm text-on-surface-variant"></div>
+</div>
+</div>
+<div id="toast" class="fixed bottom-20 md:bottom-6 right-4 z-50 bg-surface-container border border-outline-variant rounded-lg px-4 py-3 text-sm text-on-surface shadow-xl hidden"></div>
 <script>
-        // Micro-interactions and simulation feel
+        const modalLayer = document.getElementById('modalLayer');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalBody = document.getElementById('modalBody');
+        const toast = document.getElementById('toast');
+        const assignmentList = document.getElementById('assignmentList');
+        const searchInput = document.getElementById('globalSearch');
+        const bars = Array.from(document.querySelectorAll('#performanceBars > div'));
+
+        const roleBriefs = {
+            'Software Developer': 'Fix a broken API endpoint, explain the root cause, and submit a clean patch with test notes.',
+            'Frontend Developer': 'Build a responsive dashboard from a product brief and improve accessibility for keyboard users.',
+            'QA Analyst': 'Review a feature, create test cases, report bugs, and recommend release readiness.'
+        };
+
+        function showToast(message) {
+            toast.textContent = message;
+            toast.classList.remove('hidden');
+            clearTimeout(showToast.timer);
+            showToast.timer = setTimeout(() => toast.classList.add('hidden'), 2600);
+        }
+
+        function openModal(title, bodyHtml) {
+            modalTitle.textContent = title;
+            modalBody.innerHTML = bodyHtml;
+            modalLayer.classList.remove('hidden');
+            modalLayer.classList.add('flex');
+        }
+
+        function closeModal() {
+            modalLayer.classList.add('hidden');
+            modalLayer.classList.remove('flex');
+        }
+
+        function scrollToPanel(id) {
+            const target = id === 'dashboard' ? document.querySelector('main') : document.getElementById(id);
+            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function setActiveNav(id) {
+            document.querySelectorAll('[data-nav-target]').forEach(item => {
+                const active = item.dataset.navTarget === id;
+                item.classList.toggle('bg-secondary-container', active);
+                item.classList.toggle('text-primary', active);
+                item.classList.toggle('border-r-4', active);
+                item.classList.toggle('border-primary', active);
+                item.classList.toggle('text-secondary', !active);
+            });
+        }
+
+        function openSimulationModal() {
+            openModal('Start New Simulation', `
+                <label class="block text-xs font-bold uppercase tracking-widest text-secondary mb-2">Choose Career Role</label>
+                <select id="roleSelect" class="w-full bg-surface border border-outline-variant rounded-lg text-on-surface mb-4">
+                    <option>Software Developer</option>
+                    <option>Frontend Developer</option>
+                    <option>QA Analyst</option>
+                </select>
+                <div class="bg-surface border border-outline-variant rounded-lg p-4 mb-4">
+                    <p class="text-xs font-bold uppercase tracking-widest text-primary mb-2">Simulation Brief</p>
+                    <p id="roleBrief" class="text-on-surface-variant">${roleBriefs['Software Developer']}</p>
+                </div>
+                <button id="confirmSimulation" class="w-full bg-primary text-on-primary rounded-lg py-2.5 font-bold">Create Simulation</button>
+            `);
+            const roleSelect = document.getElementById('roleSelect');
+            const roleBrief = document.getElementById('roleBrief');
+            roleSelect.addEventListener('change', () => {
+                roleBrief.textContent = roleBriefs[roleSelect.value];
+            });
+            document.getElementById('confirmSimulation').addEventListener('click', () => {
+                addAssignment(roleSelect.value);
+                closeModal();
+                scrollToPanel('simulations');
+                showToast(`${roleSelect.value} simulation created`);
+            });
+        }
+
+        function addAssignment(role) {
+            const title = `${role}: Practical Work Challenge`;
+            const row = document.createElement('div');
+            row.dataset.searchItem = '';
+            row.className = 'p-4 flex items-center gap-4 hover:bg-surface-container-high transition-colors';
+            row.innerHTML = `
+                <div class="w-12 h-12 rounded bg-surface-container-highest flex items-center justify-center border border-outline-variant">
+                    <span class="material-symbols-outlined text-primary">assignment</span>
+                </div>
+                <div class="flex-1">
+                    <h4 class="text-sm font-bold text-on-surface">${title}</h4>
+                    <p class="text-xs text-on-surface-variant">New simulation - AI brief ready</p>
+                </div>
+                <div class="text-right">
+                    <button data-action="start-new" class="bg-secondary-container text-on-surface text-[10px] font-bold px-3 py-1 rounded">START</button>
+                </div>
+            `;
+            assignmentList.prepend(row);
+        }
+
+        function startAssignment(button) {
+            const row = button.closest('[data-search-item]');
+            const status = row.querySelector('.text-right');
+            status.innerHTML = `
+                <div class="text-xs font-mono text-tertiary">25% Done</div>
+                <div class="w-16 h-1 bg-surface-container-highest rounded-full mt-1">
+                    <div class="h-full bg-tertiary" style="width: 25%"></div>
+                </div>
+            `;
+            showToast('Simulation started. AI coach is tracking your progress.');
+        }
+
+        function getRecordData(button) {
+            const row = button.closest('tr');
+            const cells = row.querySelectorAll('td');
+            return {
+                id: cells[0].textContent.trim(),
+                title: cells[1].textContent.trim(),
+                date: cells[2].textContent.trim(),
+                result: cells[3].textContent.trim()
+            };
+        }
+
+        function viewRecord(button) {
+            const record = getRecordData(button);
+            openModal('Work Record Preview', `
+                <div class="space-y-3">
+                    <p><span class="text-secondary">Task ID:</span> <span class="text-on-surface font-mono">${record.id}</span></p>
+                    <p><span class="text-secondary">Simulation:</span> <span class="text-on-surface font-bold">${record.title}</span></p>
+                    <p><span class="text-secondary">Completed:</span> ${record.date}</p>
+                    <p><span class="text-secondary">Result:</span> ${record.result}</p>
+                    <div class="bg-surface border border-outline-variant rounded-lg p-4">
+                        <p class="text-primary font-bold mb-1">AI Feedback Summary</p>
+                        <p>Strong practical execution, clear problem breakdown, and job-ready communication. Recommended for entry-level interview screening.</p>
+                    </div>
+                </div>
+            `);
+        }
+
+        function downloadRecord(button) {
+            const record = getRecordData(button);
+            const content = [
+                'WorkSim Work Record',
+                `Task ID: ${record.id}`,
+                `Simulation: ${record.title}`,
+                `Completed: ${record.date}`,
+                `Result: ${record.result}`,
+                'Feedback: Strong practical execution and job-ready problem solving.'
+            ].join('\n');
+            const blob = new Blob([content], { type: 'text/plain' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `${record.id}-work-record.txt`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+            showToast('Work record downloaded');
+        }
+
+        function filterDashboard(query) {
+            const normalized = query.trim().toLowerCase();
+            document.querySelectorAll('[data-search-item]').forEach(item => {
+                item.classList.toggle('is-hidden', normalized && !item.textContent.toLowerCase().includes(normalized));
+            });
+        }
+
+        function updateBars(range) {
+            const values = range === 'Last 30 Days' ? [52, 66, 72, 68, 84, 91, 88] : [40, 65, 55, 85, 95, 60, 50];
+            bars.forEach((bar, index) => {
+                bar.style.height = `${values[index]}%`;
+                bar.title = `${range}: ${values[index]}%`;
+            });
+            showToast(`Performance range changed to ${range}`);
+        }
+
+        document.addEventListener('click', (event) => {
+            const actionTarget = event.target.closest('[data-action]');
+            const navTarget = event.target.closest('[data-nav-target]');
+
+            if (navTarget) {
+                event.preventDefault();
+                const id = navTarget.dataset.navTarget;
+                setActiveNav(id);
+                scrollToPanel(id);
+            }
+
+            if (!actionTarget) return;
+            event.preventDefault();
+            const action = actionTarget.dataset.action;
+            if (action === 'new-simulation') openSimulationModal();
+            if (action === 'close-modal') closeModal();
+            if (action === 'view-simulations') scrollToPanel('simulations');
+            if (action === 'start-qa' || action === 'start-new') startAssignment(actionTarget);
+            if (action === 'view-record') viewRecord(actionTarget);
+            if (action === 'download-record') downloadRecord(actionTarget);
+            if (action === 'report') openModal('Performance Report', '<p>Your readiness score is 84%. You are strongest in debugging, UI implementation, and practical communication. Complete one more QA task to unlock an updated shareable Work Record.</p>');
+            if (action === 'notifications') openModal('Notifications', '<ul class="space-y-2"><li>AI feedback is ready for API Debugging Challenge.</li><li>New Frontend Developer simulation available.</li><li>Your Work Record was viewed by a demo employer profile.</li></ul>');
+            if (action === 'settings') openModal('Settings', '<p>Demo settings are active. In the full product, users can manage profile visibility, preferred roles, feedback detail, and Work Record sharing.</p>');
+            if (action === 'help') openModal('Help Center', '<p>Choose a role, start a simulation, submit practical work, then download or share your Work Record after completion.</p>');
+            if (action === 'account') openModal('Account', '<p class="text-on-surface font-bold">Demo Candidate</p><p>Career track: Software Developer</p><p>Status: Building job-ready experience</p>');
+        });
+
+        modalLayer.addEventListener('click', (event) => {
+            if (event.target === modalLayer) closeModal();
+        });
+
+        searchInput.addEventListener('input', (event) => filterDashboard(event.target.value));
+        document.getElementById('rangeSelect').addEventListener('change', (event) => updateBars(event.target.value));
+
         document.querySelectorAll('.bento-grid > div').forEach(card => {
             card.addEventListener('mouseenter', () => {
                 card.style.borderColor = '#a78bfa';
@@ -450,7 +667,6 @@
             });
         });
 
-        // Simulating background data heartbeat
         setInterval(() => {
             const networkPulse = document.querySelector('.animate-pulse');
             if (networkPulse) {
