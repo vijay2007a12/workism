@@ -44,6 +44,16 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    match /workRecords/{docId} {
+      allow read: if ownsExistingDoc();
+      allow create: if ownsNewDoc()
+        && request.resource.data.taskId is string
+        && request.resource.data.simulationName is string
+        && request.resource.data.result in ['SUCCESS', 'NEEDS_REVIEW'];
+      allow update: if ownsExistingDoc();
+      allow delete: if false;
+    }
+
     match /analyticsEvents/{docId} {
       allow read: if ownsExistingDoc();
       allow create: if ownsNewDoc()

@@ -49,7 +49,9 @@
 
         body.auth-required aside,
         body.auth-required > .flex-1,
-        body.auth-required nav.md\:hidden {
+        body.auth-required nav.md\:hidden,
+        body.auth-required #helpbotToggle,
+        body.auth-required #helpbotPanel {
             display: none !important;
         }
     </style>
@@ -337,10 +339,10 @@ Continue with Google
 <h3 class="text-lg font-bold text-on-surface">Simulation Readiness</h3>
 <p class="text-sm text-on-surface-variant">Software Developer career track</p>
 </div>
-<span class="text-2xl font-mono font-black text-primary">84%</span>
+<span id="readinessScore" class="text-2xl font-mono font-black text-primary">0%</span>
 </div>
 <div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden mb-6 relative z-10">
-<div class="h-full bg-primary" style="width: 84%"></div>
+<div id="readinessBar" class="h-full bg-primary" style="width: 0%"></div>
 </div>
 <div class="grid grid-cols-3 gap-4 relative z-10">
 <div>
@@ -353,7 +355,7 @@ Continue with Google
 </div>
 <div>
 <p class="text-[10px] uppercase tracking-widest text-secondary font-bold">Tasks Submitted</p>
-<p class="text-xl font-bold text-on-surface">14<span class="text-xs text-secondary ml-1">total</span></p>
+<p class="text-xl font-bold text-on-surface"><span id="tasksSubmitted">0</span><span class="text-xs text-secondary ml-1">total</span></p>
 </div>
 </div>
 <!-- Subtle Background Pattern -->
@@ -471,7 +473,7 @@ Continue with Google
 <th class="px-6 py-3 text-right">Actions</th>
 </tr>
 </thead>
-<tbody class="divide-y divide-outline-variant text-sm">
+<tbody id="recordsBody" class="divide-y divide-outline-variant text-sm">
 <tr data-search-item class="hover:bg-surface-container-high transition-colors">
 <td class="px-6 py-4 font-mono text-primary">SIM-8821</td>
 <td class="px-6 py-4 font-bold">API Debugging Challenge</td>
@@ -545,6 +547,25 @@ Continue with Google
 </div>
 </div>
 <div id="toast" class="fixed bottom-20 md:bottom-6 right-4 z-50 bg-surface-container border border-outline-variant rounded-lg px-4 py-3 text-sm text-on-surface shadow-xl hidden"></div>
+<button id="helpbotToggle" class="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-40 bg-primary text-on-primary w-14 h-14 rounded-full shadow-xl flex items-center justify-center">
+<span class="material-symbols-outlined">smart_toy</span>
+</button>
+<section id="helpbotPanel" class="hidden fixed bottom-40 right-4 md:bottom-24 md:right-6 z-40 w-[calc(100vw-2rem)] max-w-sm bg-surface-container border border-outline-variant rounded-xl shadow-2xl overflow-hidden">
+<div class="px-4 py-3 border-b border-outline-variant flex items-center justify-between">
+<div>
+<h3 class="font-bold text-on-surface text-sm">WorkSim AI Helpbot</h3>
+<p class="text-[10px] uppercase tracking-widest text-secondary">Career simulation guide</p>
+</div>
+<button id="helpbotClose" class="material-symbols-outlined text-secondary hover:text-on-surface">close</button>
+</div>
+<div id="helpbotMessages" class="h-72 overflow-y-auto p-4 space-y-3 text-sm">
+<div class="bg-surface border border-outline-variant rounded-lg p-3 text-on-surface-variant">Hi, I can help you choose roles, start tasks, understand scores, and build your Work Record.</div>
+</div>
+<form id="helpbotForm" class="p-3 border-t border-outline-variant flex gap-2">
+<input id="helpbotInput" class="flex-1 bg-surface border border-outline-variant rounded-lg text-on-surface text-sm" placeholder="Ask about jobs, tasks, records..." type="text"/>
+<button class="bg-primary text-on-primary rounded-lg px-3 font-bold" type="submit">Send</button>
+</form>
+</section>
 <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
         import {
@@ -552,9 +573,13 @@ Continue with Google
             collection,
             doc,
             getDoc,
+            getDocs,
             getFirestore,
+            query,
             serverTimestamp,
-            setDoc
+            setDoc,
+            updateDoc,
+            where
         } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
         import {
             createUserWithEmailAndPassword,
@@ -713,6 +738,44 @@ Continue with Google
                     createdAt: serverTimestamp()
                 });
             },
+            async createSimulation(data) {
+                if (!auth.currentUser || !activeProfile) throw new Error('You must be logged in.');
+                const ref = await addDoc(collection(db, 'simulations'), {
+                    ...data,
+                    userId: auth.currentUser.uid,
+                    userEmail: auth.currentUser.email || '',
+                    userRole: activeProfile.role || 'candidate',
+                    source: 'workism-vercel-demo',
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp()
+                });
+                return ref.id;
+            },
+            async updateSimulation(id, data) {
+                if (!auth.currentUser || !activeProfile) throw new Error('You must be logged in.');
+                await updateDoc(doc(db, 'simulations', id), {
+                    ...data,
+                    updatedAt: serverTimestamp()
+                });
+            },
+            async createWorkRecord(data) {
+                if (!auth.currentUser || !activeProfile) throw new Error('You must be logged in.');
+                const ref = await addDoc(collection(db, 'workRecords'), {
+                    ...data,
+                    userId: auth.currentUser.uid,
+                    userEmail: auth.currentUser.email || '',
+                    userRole: activeProfile.role || 'candidate',
+                    source: 'workism-vercel-demo',
+                    createdAt: serverTimestamp()
+                });
+                return ref.id;
+            },
+            async listMine(collectionName) {
+                if (!auth.currentUser) return [];
+                const mine = query(collection(db, collectionName), where('userId', '==', auth.currentUser.uid));
+                const snapshot = await getDocs(mine);
+                return snapshot.docs.map(item => ({ id: item.id, ...item.data() }));
+            },
             async logout() {
                 await signOut(auth);
             }
@@ -750,8 +813,20 @@ Continue with Google
         const modalBody = document.getElementById('modalBody');
         const toast = document.getElementById('toast');
         const assignmentList = document.getElementById('assignmentList');
+        const recordsBody = document.getElementById('recordsBody');
         const searchInput = document.getElementById('globalSearch');
         const bars = Array.from(document.querySelectorAll('#performanceBars > div'));
+        const readinessScore = document.getElementById('readinessScore');
+        const readinessBar = document.getElementById('readinessBar');
+        const tasksSubmitted = document.getElementById('tasksSubmitted');
+        const helpbotToggle = document.getElementById('helpbotToggle');
+        const helpbotPanel = document.getElementById('helpbotPanel');
+        const helpbotClose = document.getElementById('helpbotClose');
+        const helpbotMessages = document.getElementById('helpbotMessages');
+        const helpbotForm = document.getElementById('helpbotForm');
+        const helpbotInput = document.getElementById('helpbotInput');
+        let simulations = [];
+        let workRecords = [];
 
         const roleBriefs = {
             'Software Developer': 'Fix a broken API endpoint, explain the root cause, and submit a clean patch with test notes.',
@@ -773,6 +848,16 @@ Continue with Google
                 email: '',
                 role: 'candidate'
             };
+        }
+
+        function escapeHtml(value) {
+            return String(value || '').replace(/[&<>"']/g, char => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[char]));
         }
 
         function showToast(message) {
@@ -811,6 +896,98 @@ Continue with Google
             });
         }
 
+        function simulationIcon(role) {
+            if ((role || '').includes('Frontend')) return 'web';
+            if ((role || '').includes('QA')) return 'fact_check';
+            return 'terminal';
+        }
+
+        function renderSimulations() {
+            if (!simulations.length) {
+                assignmentList.innerHTML = '<div class="p-6 text-sm text-on-surface-variant">No active simulations yet. Launch a role simulation to start storing real progress.</div>';
+                return;
+            }
+
+            assignmentList.innerHTML = simulations.map(sim => {
+                const progress = Number(sim.progress || 0);
+                const statusLabel = sim.status === 'completed' ? 'COMPLETED' : progress > 0 ? `${progress}% Done` : 'START';
+                const action = sim.status === 'completed'
+                    ? '<span class="px-3 py-1 rounded bg-tertiary-container text-tertiary text-[10px] font-bold">DONE</span>'
+                    : `<button data-action="advance-simulation" data-id="${sim.id}" class="bg-secondary-container text-on-surface text-[10px] font-bold px-3 py-1 rounded">${progress > 0 ? 'CONTINUE' : 'START'}</button>`;
+                return `
+                    <div data-search-item data-simulation-id="${sim.id}" class="p-4 flex items-center gap-4 hover:bg-surface-container-high transition-colors">
+                        <div class="w-12 h-12 rounded bg-surface-container-highest flex items-center justify-center border border-outline-variant">
+                            <span class="material-symbols-outlined text-primary">${simulationIcon(sim.role)}</span>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="text-sm font-bold text-on-surface">${escapeHtml(sim.title)}</h4>
+                            <p class="text-xs text-on-surface-variant">${escapeHtml(sim.brief || sim.role || 'Real-world WorkSim task')}</p>
+                        </div>
+                        <div class="text-right min-w-20">
+                            <div class="text-xs font-mono ${sim.status === 'completed' ? 'text-tertiary' : 'text-secondary'}">${statusLabel}</div>
+                            <div class="w-16 h-1 bg-surface-container-highest rounded-full mt-1 mb-2">
+                                <div class="h-full bg-tertiary" style="width: ${progress}%"></div>
+                            </div>
+                            ${action}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderRecords() {
+            if (!workRecords.length) {
+                recordsBody.innerHTML = '<tr><td class="px-6 py-5 text-on-surface-variant text-sm" colspan="5">No Work Records yet. Complete a simulation to generate one.</td></tr>';
+                return;
+            }
+
+            recordsBody.innerHTML = workRecords.map(record => `
+                <tr data-search-item data-record-id="${record.id}" class="hover:bg-surface-container-high transition-colors">
+                    <td class="px-6 py-4 font-mono text-primary">${escapeHtml(record.taskId)}</td>
+                    <td class="px-6 py-4 font-bold">${escapeHtml(record.simulationName)}</td>
+                    <td class="px-6 py-4 text-on-surface-variant">${escapeHtml(record.completedDate)}</td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-0.5 rounded bg-tertiary-container text-tertiary text-[10px] font-bold">${escapeHtml(record.result || 'SUCCESS')}</span>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <button data-action="download-record" class="material-symbols-outlined text-secondary hover:text-on-surface">download</button>
+                        <button data-action="view-record" class="material-symbols-outlined text-secondary hover:text-on-surface ml-2">visibility</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function updateStats() {
+            const completed = simulations.filter(sim => sim.status === 'completed').length;
+            const average = simulations.length
+                ? Math.round(simulations.reduce((sum, sim) => sum + Number(sim.progress || 0), 0) / simulations.length)
+                : 0;
+            readinessScore.textContent = `${average}%`;
+            readinessBar.style.width = `${average}%`;
+            tasksSubmitted.textContent = String(completed + workRecords.length);
+        }
+
+        async function loadWorkspaceData() {
+            if (!window.worksimFirebase?.listMine) return;
+            try {
+                const [savedSims, savedRecords] = await Promise.all([
+                    window.worksimFirebase.listMine('simulations'),
+                    window.worksimFirebase.listMine('workRecords')
+                ]);
+                simulations = savedSims.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+                workRecords = savedRecords.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+                renderSimulations();
+                renderRecords();
+                updateStats();
+            } catch (error) {
+                console.error('Workspace load failed:', error);
+                showToast('Publish Firestore rules to load saved data');
+                renderSimulations();
+                renderRecords();
+                updateStats();
+            }
+        }
+
         function openSimulationModal() {
             openModal('Start New Simulation', `
                 <label class="block text-xs font-bold uppercase tracking-widest text-secondary mb-2">Choose Career Role</label>
@@ -830,15 +1007,24 @@ Continue with Google
             roleSelect.addEventListener('change', () => {
                 roleBrief.textContent = roleBriefs[roleSelect.value];
             });
-            document.getElementById('confirmSimulation').addEventListener('click', () => {
-                addAssignment(roleSelect.value);
-                saveToFirebase('simulations', {
+            document.getElementById('confirmSimulation').addEventListener('click', async () => {
+                const simulation = {
                     role: roleSelect.value,
                     title: `${roleSelect.value}: Practical Work Challenge`,
                     brief: roleBriefs[roleSelect.value],
                     status: 'created',
                     progress: 0
-                });
+                };
+                try {
+                    const id = await window.worksimFirebase.createSimulation(simulation);
+                    simulations.unshift({ id, ...simulation });
+                    renderSimulations();
+                    updateStats();
+                } catch (error) {
+                    console.error('Simulation create failed:', error);
+                    showToast('Could not save simulation. Check Firestore rules.');
+                    return;
+                }
                 closeModal();
                 scrollToPanel('simulations');
                 showToast(`${roleSelect.value} simulation created`);
@@ -868,12 +1054,7 @@ Continue with Google
         function startAssignment(button) {
             const row = button.closest('[data-search-item]');
             const status = row.querySelector('.text-right');
-            status.innerHTML = `
-                <div class="text-xs font-mono text-tertiary">25% Done</div>
-                <div class="w-16 h-1 bg-surface-container-highest rounded-full mt-1">
-                    <div class="h-full bg-tertiary" style="width: 25%"></div>
-                </div>
-            `;
+            status.innerHTML = '<div class="text-xs font-mono text-tertiary">25% Done</div><div class="w-16 h-1 bg-surface-container-highest rounded-full mt-1"><div class="h-full bg-tertiary" style="width: 25%"></div></div>';
             showToast('Simulation started. AI coach is tracking your progress.');
             saveToFirebase('simulations', {
                 role: getProfile().role,
@@ -883,14 +1064,69 @@ Continue with Google
             });
         }
 
+        async function advanceSimulation(id) {
+            const sim = simulations.find(item => item.id === id);
+            if (!sim) return;
+
+            const nextProgress = Math.min(100, Number(sim.progress || 0) + 25);
+            const nextStatus = nextProgress >= 100 ? 'completed' : 'started';
+            try {
+                await window.worksimFirebase.updateSimulation(id, {
+                    progress: nextProgress,
+                    status: nextStatus
+                });
+                sim.progress = nextProgress;
+                sim.status = nextStatus;
+
+                if (nextStatus === 'completed') {
+                    const record = {
+                        taskId: `SIM-${Math.floor(1000 + Math.random() * 9000)}`,
+                        simulationId: id,
+                        simulationName: sim.title,
+                        completedDate: new Date().toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric'
+                        }),
+                        result: 'SUCCESS',
+                        score: 92,
+                        feedback: `Strong execution on ${sim.role}. Clear reasoning, practical delivery, and job-ready communication.`
+                    };
+                    const recordId = await window.worksimFirebase.createWorkRecord(record);
+                    workRecords.unshift({ id: recordId, ...record });
+                    showToast('Simulation completed. Work Record generated.');
+                } else {
+                    showToast(`Progress saved: ${nextProgress}%`);
+                }
+
+                renderSimulations();
+                renderRecords();
+                updateStats();
+            } catch (error) {
+                console.error('Progress update failed:', error);
+                showToast('Could not update progress. Check Firestore rules.');
+            }
+        }
+
         function getRecordData(button) {
             const row = button.closest('tr');
+            const saved = workRecords.find(record => record.id === row?.dataset.recordId);
+            if (saved) {
+                return {
+                    id: saved.taskId,
+                    title: saved.simulationName,
+                    date: saved.completedDate,
+                    result: saved.result,
+                    feedback: saved.feedback || 'Strong practical execution and job-ready problem solving.'
+                };
+            }
             const cells = row.querySelectorAll('td');
             return {
                 id: cells[0].textContent.trim(),
                 title: cells[1].textContent.trim(),
                 date: cells[2].textContent.trim(),
-                result: cells[3].textContent.trim()
+                result: cells[3].textContent.trim(),
+                feedback: 'Strong practical execution and job-ready problem solving.'
             };
         }
 
@@ -904,7 +1140,7 @@ Continue with Google
                     <p><span class="text-secondary">Result:</span> ${record.result}</p>
                     <div class="bg-surface border border-outline-variant rounded-lg p-4">
                         <p class="text-primary font-bold mb-1">AI Feedback Summary</p>
-                        <p>Strong practical execution, clear problem breakdown, and job-ready communication. Recommended for entry-level interview screening.</p>
+                        <p>${escapeHtml(record.feedback)} Recommended for entry-level interview screening.</p>
                     </div>
                 </div>
             `);
@@ -970,6 +1206,7 @@ Continue with Google
             if (action === 'close-modal') closeModal();
             if (action === 'view-simulations') scrollToPanel('simulations');
             if (action === 'start-qa' || action === 'start-new') startAssignment(actionTarget);
+            if (action === 'advance-simulation') advanceSimulation(actionTarget.dataset.id);
             if (action === 'view-record') viewRecord(actionTarget);
             if (action === 'download-record') downloadRecord(actionTarget);
             if (action === 'view-record') {
@@ -1003,6 +1240,7 @@ Continue with Google
             const profile = event.detail;
             showToast(`Welcome ${profile.name || profile.email}`);
             saveToFirebase('analyticsEvents', { action: 'login' });
+            loadWorkspaceData();
         });
 
         modalLayer.addEventListener('click', (event) => {
@@ -1011,6 +1249,56 @@ Continue with Google
 
         searchInput.addEventListener('input', (event) => filterDashboard(event.target.value));
         document.getElementById('rangeSelect').addEventListener('change', (event) => updateBars(event.target.value));
+
+        function helpbotReply(message) {
+            const text = message.toLowerCase();
+            if (text.includes('role') || text.includes('career') || text.includes('job')) {
+                return 'For your first WorkSim path, choose Software Developer if you like logic and debugging, Frontend Developer if you enjoy UI building, or QA Analyst if you like testing and quality checks.';
+            }
+            if (text.includes('start') || text.includes('simulation') || text.includes('task')) {
+                return 'Click New Simulation, choose a role, then press START or CONTINUE on the assignment. Each click saves progress to Firebase. At 100%, I generate a Work Record.';
+            }
+            if (text.includes('record') || text.includes('certificate') || text.includes('proof')) {
+                return 'A Work Record is generated after completing a simulation. It stores your task ID, role, completion date, result, score, and AI feedback so you can share proof of practical skill.';
+            }
+            if (text.includes('score') || text.includes('performance') || text.includes('readiness')) {
+                return `Your current readiness is ${readinessScore.textContent}. Complete more simulations to raise the score and create stronger records for employers.`;
+            }
+            if (text.includes('firebase') || text.includes('save') || text.includes('data')) {
+                return 'Your simulations and Work Records save in Firestore under your logged-in user ID. If saving fails, publish the latest Firestore rules and make sure Firebase Auth is enabled.';
+            }
+            if (text.includes('admin') || text.includes('employer')) {
+                return 'Candidates complete simulations, employers review readiness signals, and admins manage platform activity. This demo stores the selected role in each user profile.';
+            }
+            return 'I can help with choosing a role, starting simulations, understanding performance, Work Records, Firebase saving, and employer/admin flows. Try asking “how do I create a Work Record?”';
+        }
+
+        function appendBotMessage(message, fromUser = false) {
+            const bubble = document.createElement('div');
+            bubble.className = fromUser
+                ? 'ml-auto max-w-[85%] bg-primary text-on-primary rounded-lg p-3'
+                : 'max-w-[85%] bg-surface border border-outline-variant rounded-lg p-3 text-on-surface-variant';
+            bubble.textContent = message;
+            helpbotMessages.appendChild(bubble);
+            helpbotMessages.scrollTop = helpbotMessages.scrollHeight;
+        }
+
+        helpbotToggle.addEventListener('click', () => {
+            helpbotPanel.classList.toggle('hidden');
+        });
+
+        helpbotClose.addEventListener('click', () => {
+            helpbotPanel.classList.add('hidden');
+        });
+
+        helpbotForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            const message = helpbotInput.value.trim();
+            if (!message) return;
+            appendBotMessage(message, true);
+            helpbotInput.value = '';
+            setTimeout(() => appendBotMessage(helpbotReply(message)), 250);
+        });
 
         document.querySelectorAll('.bento-grid > div').forEach(card => {
             card.addEventListener('mouseenter', () => {
