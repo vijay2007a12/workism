@@ -181,6 +181,25 @@
 <p id="authError" class="hidden text-sm text-error"></p>
 <button id="authSubmit" class="w-full bg-primary text-on-primary rounded-lg py-3 font-black" type="submit">Login</button>
 </form>
+<div class="my-5 flex items-center gap-3">
+<div class="h-px flex-1 bg-outline-variant"></div>
+<span class="text-[10px] font-bold uppercase tracking-widest text-secondary">or</span>
+<div class="h-px flex-1 bg-outline-variant"></div>
+</div>
+<div class="space-y-3">
+<div>
+<label class="block text-xs font-bold uppercase tracking-widest text-secondary mb-2">Google Account Type</label>
+<select id="googleRole" class="w-full bg-surface-container border border-outline-variant rounded-lg text-on-surface">
+<option value="candidate">Candidate / Normal User</option>
+<option value="employer">Employer</option>
+<option value="admin">Admin</option>
+</select>
+</div>
+<button id="googleLogin" class="w-full bg-surface-container border border-outline-variant text-on-surface rounded-lg py-3 font-black flex items-center justify-center gap-2" type="button">
+<span class="material-symbols-outlined text-primary">login</span>
+Continue with Google
+</button>
+</div>
 <p class="text-xs text-on-surface-variant mt-5">For testing, you can create any role. In production, admin accounts should be approved manually.</p>
 </div>
 </div>
@@ -540,8 +559,10 @@
         import {
             createUserWithEmailAndPassword,
             getAuth,
+            GoogleAuthProvider,
             onAuthStateChanged,
             signInWithEmailAndPassword,
+            signInWithPopup,
             signOut,
             updateProfile
         } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
@@ -564,6 +585,8 @@
         const authEmail = document.getElementById('authEmail');
         const authPassword = document.getElementById('authPassword');
         const authRole = document.getElementById('authRole');
+        const googleRole = document.getElementById('googleRole');
+        const googleLogin = document.getElementById('googleLogin');
         const authError = document.getElementById('authError');
         const loginTab = document.getElementById('loginTab');
         const signupTab = document.getElementById('signupTab');
@@ -572,6 +595,7 @@
         const authSubmit = document.getElementById('authSubmit');
         const userNameLabel = document.getElementById('userNameLabel');
         const userRoleLabel = document.getElementById('userRoleLabel');
+        const googleProvider = new GoogleAuthProvider();
         let authMode = 'login';
         let activeProfile = null;
 
@@ -635,6 +659,22 @@
             } finally {
                 authSubmit.disabled = false;
                 authSubmit.textContent = authMode === 'signup' ? 'Create Account' : 'Login';
+            }
+        });
+
+        googleLogin.addEventListener('click', async () => {
+            googleLogin.disabled = true;
+            googleLogin.innerHTML = '<span class="material-symbols-outlined text-primary">sync</span>Connecting...';
+            authError.classList.add('hidden');
+
+            try {
+                const credential = await signInWithPopup(auth, googleProvider);
+                await ensureProfile(credential.user, googleRole.value, credential.user.displayName || '');
+            } catch (error) {
+                showAuthError((error.code || error.message || 'Google login failed').replace('auth/', '').replaceAll('-', ' '));
+            } finally {
+                googleLogin.disabled = false;
+                googleLogin.innerHTML = '<span class="material-symbols-outlined text-primary">login</span>Continue with Google';
             }
         });
 
