@@ -619,6 +619,16 @@ Continue with Google
             authError.classList.remove('hidden');
         }
 
+        function fallbackProfile(user, role = 'candidate', name = '') {
+            return {
+                uid: user.uid,
+                name: name || user.displayName || user.email || 'WorkSim User',
+                email: user.email || '',
+                role,
+                status: 'local'
+            };
+        }
+
         async function ensureProfile(user, role = 'candidate', name = '') {
             const profileRef = doc(db, 'users', user.uid);
             const snapshot = await getDoc(profileRef);
@@ -650,7 +660,11 @@ Continue with Google
                 if (authMode === 'signup') {
                     const credential = await createUserWithEmailAndPassword(auth, authEmail.value, authPassword.value);
                     await updateProfile(credential.user, { displayName: authName.value || 'WorkSim User' });
-                    await ensureProfile(credential.user, authRole.value, authName.value);
+                    try {
+                        await ensureProfile(credential.user, authRole.value, authName.value);
+                    } catch (profileError) {
+                        console.error('Profile save failed:', profileError);
+                    }
                 } else {
                     await signInWithEmailAndPassword(auth, authEmail.value, authPassword.value);
                 }
@@ -669,7 +683,11 @@ Continue with Google
 
             try {
                 const credential = await signInWithPopup(auth, googleProvider);
-                await ensureProfile(credential.user, googleRole.value, credential.user.displayName || '');
+                try {
+                    await ensureProfile(credential.user, googleRole.value, credential.user.displayName || '');
+                } catch (profileError) {
+                    console.error('Google profile save failed:', profileError);
+                }
             } catch (error) {
                 showAuthError((error.code || error.message || 'Google login failed').replace('auth/', '').replaceAll('-', ' '));
             } finally {
@@ -710,7 +728,15 @@ Continue with Google
                 return;
             }
 
-            activeProfile = await ensureProfile(user);
+            try {
+                activeProfile = await ensureProfile(user);
+            } catch (error) {
+                console.error('Profile load failed:', error);
+                activeProfile = fallbackProfile(user);
+                setTimeout(() => {
+                    if (window.showToast) window.showToast('Logged in. Publish updated Firestore rules to save data.');
+                }, 400);
+            }
             document.body.classList.remove('auth-required');
             authScreen.classList.add('hidden');
             userNameLabel.textContent = activeProfile.name || user.email || 'WorkSim User';
@@ -755,6 +781,7 @@ Continue with Google
             clearTimeout(showToast.timer);
             showToast.timer = setTimeout(() => toast.classList.add('hidden'), 2600);
         }
+        window.showToast = showToast;
 
         function openModal(title, bodyHtml) {
             modalTitle.textContent = title;
