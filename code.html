@@ -834,6 +834,21 @@ Continue with Google
             'QA Analyst': 'Review a feature, create test cases, report bugs, and recommend release readiness.'
         };
 
+        const taskPrompts = {
+            'Software Developer': {
+                title: 'API Debugging Sprint',
+                prompt: 'A login API returns 500 for valid users. Write the likely root cause, your debugging steps, the patch you would make, and how you would test it.'
+            },
+            'Frontend Developer': {
+                title: 'Responsive Dashboard Build',
+                prompt: 'A dashboard card overflows on mobile. Explain your layout fix, accessibility improvements, and how you would verify it across devices.'
+            },
+            'QA Analyst': {
+                title: 'Release Readiness Review',
+                prompt: 'A new signup feature is ready for release. Write test cases, likely edge cases, and the release recommendation you would give.'
+            }
+        };
+
         function saveToFirebase(collectionName, data) {
             if (!window.worksimFirebase) return;
             window.worksimFirebase.save(collectionName, data).catch(error => {
@@ -858,6 +873,10 @@ Continue with Google
                 '"': '&quot;',
                 "'": '&#39;'
             }[char]));
+        }
+
+        function localId(prefix) {
+            return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         }
 
         function showToast(message) {
@@ -947,7 +966,7 @@ Continue with Google
                     <td class="px-6 py-4 font-bold">${escapeHtml(record.simulationName)}</td>
                     <td class="px-6 py-4 text-on-surface-variant">${escapeHtml(record.completedDate)}</td>
                     <td class="px-6 py-4">
-                        <span class="px-2 py-0.5 rounded bg-tertiary-container text-tertiary text-[10px] font-bold">${escapeHtml(record.result || 'SUCCESS')}</span>
+                        <span class="px-2 py-0.5 rounded ${record.result === 'NEEDS_REVIEW' ? 'bg-surface-container-highest text-on-surface-variant' : 'bg-tertiary-container text-tertiary'} text-[10px] font-bold">${escapeHtml(record.result || 'SUCCESS')}</span>
                     </td>
                     <td class="px-6 py-4 text-right">
                         <button data-action="download-record" class="material-symbols-outlined text-secondary hover:text-on-surface">download</button>
@@ -1022,8 +1041,10 @@ Continue with Google
                     updateStats();
                 } catch (error) {
                     console.error('Simulation create failed:', error);
-                    showToast('Could not save simulation. Check Firestore rules.');
-                    return;
+                    simulations.unshift({ id: localId('local-sim'), ...simulation, localOnly: true });
+                    renderSimulations();
+                    updateStats();
+                    showToast('Simulation created locally. Publish Firestore rules to save it.');
                 }
                 closeModal();
                 scrollToPanel('simulations');
@@ -1068,44 +1089,99 @@ Continue with Google
             const sim = simulations.find(item => item.id === id);
             if (!sim) return;
 
-            const nextProgress = Math.min(100, Number(sim.progress || 0) + 25);
-            const nextStatus = nextProgress >= 100 ? 'completed' : 'started';
+            const task = taskPrompts[sim.role] || taskPrompts['Software Developer'];
+            openModal(task.title, `
+                <div class="space-y-4">
+                    <div class="bg-surface border border-outline-variant rounded-lg p-4">
+                        <p class="text-xs font-bold uppercase tracking-widest text-primary mb-2">Task Brief</p>
+                        <p>${escapeHtml(task.prompt)}</p>
+                    </div>
+                    <label class="block">
+                        <span class="block text-xs font-bold uppercase tracking-widest text-secondary mb-2">Your Work Submission</span>
+                        <textarea id="solutionText" class="w-full min-h-40 bg-surface border border-outline-variant rounded-lg text-on-surface" placeholder="Write your solution, steps, assumptions, and tests..."></textarea>
+                    </label>
+                    <button id="submitSimulationWork" class="w-full bg-primary text-on-primary rounded-lg py-2.5 font-bold">Submit Work</button>
+                </div>
+            `);
+
+            document.getElementById('submitSimulationWork').addEventListener('click', () => submitSimulationWork(id));
+        }
+
+        function scoreSolution(solution) {
+            const words = solution.trim().split(/\s+/).filter(Boolean).length;
+            const hasTesting = /test|verify|case|validation|qa/i.test(solution);
+            const hasFix = /fix|patch|debug|root cause|implement|layout|release/i.test(solution);
+            const hasReasoning = /because|therefore|step|first|then|issue|risk/i.test(solution);
+            return Math.min(98, 55 + Math.min(words, 80) * 0.35 + (hasTesting ? 10 : 0) + (hasFix ? 10 : 0) + (hasReasoning ? 8 : 0));
+        }
+
+        async function submitSimulationWork(id) {
+            const sim = simulations.find(item => item.id === id);
+            const solution = document.getElementById('solutionText')?.value.trim() || '';
+            if (!sim) return;
+            if (solution.length < 40) {
+                showToast('Add more detail before submitting your work.');
+                return;
+            }
+
+            const score = Math.round(scoreSolution(solution));
+            const feedback = score >= 85
+                ? `Excellent practical submission for ${sim.role}. You explained the issue, proposed a realistic fix, and included verification steps.`
+                : score >= 70
+                    ? `Good submission for ${sim.role}. Add clearer edge cases and stronger testing detail to improve employer readiness.`
+                    : `Good start for ${sim.role}, but the answer needs more concrete steps, reasoning, and validation before it is job-ready.`;
+
+            sim.progress = 100;
+            sim.status = 'completed';
+            sim.submission = solution;
+            sim.score = score;
+
+            const record = {
+                taskId: `SIM-${Math.floor(1000 + Math.random() * 9000)}`,
+                simulationId: id,
+                simulationName: sim.title,
+                completedDate: new Date().toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                }),
+                result: score >= 70 ? 'SUCCESS' : 'NEEDS_REVIEW',
+                score,
+                feedback,
+                submission: solution
+            };
+
+            let recordId = localId('local-record');
             try {
                 await window.worksimFirebase.updateSimulation(id, {
-                    progress: nextProgress,
-                    status: nextStatus
+                    progress: 100,
+                    status: 'completed',
+                    score,
+                    submission: solution
                 });
-                sim.progress = nextProgress;
-                sim.status = nextStatus;
-
-                if (nextStatus === 'completed') {
-                    const record = {
-                        taskId: `SIM-${Math.floor(1000 + Math.random() * 9000)}`,
-                        simulationId: id,
-                        simulationName: sim.title,
-                        completedDate: new Date().toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric'
-                        }),
-                        result: 'SUCCESS',
-                        score: 92,
-                        feedback: `Strong execution on ${sim.role}. Clear reasoning, practical delivery, and job-ready communication.`
-                    };
-                    const recordId = await window.worksimFirebase.createWorkRecord(record);
-                    workRecords.unshift({ id: recordId, ...record });
-                    showToast('Simulation completed. Work Record generated.');
-                } else {
-                    showToast(`Progress saved: ${nextProgress}%`);
-                }
-
-                renderSimulations();
-                renderRecords();
-                updateStats();
+                recordId = await window.worksimFirebase.createWorkRecord(record);
             } catch (error) {
-                console.error('Progress update failed:', error);
-                showToast('Could not update progress. Check Firestore rules.');
+                console.error('Submission save failed:', error);
+                showToast('Work completed locally. Publish Firestore rules to save it.');
             }
+
+            workRecords.unshift({ id: recordId, ...record });
+            renderSimulations();
+            renderRecords();
+            updateStats();
+            openModal('AI Feedback & Work Record', `
+                <div class="space-y-4">
+                    <div class="bg-surface border border-outline-variant rounded-lg p-4">
+                        <p class="text-xs font-bold uppercase tracking-widest text-secondary mb-1">Score</p>
+                        <p class="text-3xl font-black text-primary">${score}/100</p>
+                    </div>
+                    <div class="bg-surface border border-outline-variant rounded-lg p-4">
+                        <p class="text-xs font-bold uppercase tracking-widest text-primary mb-2">AI Feedback</p>
+                        <p>${escapeHtml(feedback)}</p>
+                    </div>
+                    <p class="text-on-surface">Work Record <span class="font-mono text-primary">${record.taskId}</span> has been generated.</p>
+                </div>
+            `);
         }
 
         function getRecordData(button) {
